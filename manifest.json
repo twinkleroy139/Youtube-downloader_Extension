@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Video Downloader",
+  "version": "1.0",
+  "description": "Safely download YouTube videos using your own API server.",
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/Adobe Express - file.png",
+      "48": "icons/Adobe Express - file.png",
+      "128": "icons/ytLogo1.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
