@@ -95,48 +95,6 @@
 
 
 
-
-// const app = express();
-// app.use(cors());
-
-// app.get('/api/download', async (req, res) => {
-//   const videoURL = req.query.url;
-  
-//   if (!ytdl.validateURL(videoURL)) {
-//     return res.status(400).send('Invalid YouTube URL');
-//   }
-
-//   try {
-//     const info = await ytdl.getInfo(videoURL);
-//     const title = info.videoDetails.title.replace(/[^\w\s]/gi, '');
-    
-//     res.header('Content-Disposition', `attachment; filename="${title}.mp4"`);
-
-//     ytdl(videoURL, {
-//       format: 'mp4'
-//     }).pipe(res);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).send('Download failed');
-//   }
-// });
-
-// app.listen(3000, () => {
-//   console.log('✅ Server running on http://localhost:3000');
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-
 // // 2. Update server.js to Include a Search Route
 // // Here's the updated version of your server.js with both download 
 // // and search functionality:
@@ -239,14 +197,6 @@
 
 
 
-
-
-
-
-
-
-
-
 const express = require('express');
 const cors = require('cors');
 const ytdl = require('@distube/ytdl-core');
@@ -255,7 +205,7 @@ const ytSearch = require('yt-search');
 const app = express();
 app.use(cors());
 
-// 🎯 Download video file
+// Download video file (direct streaming)
 app.get('/api/download', async (req, res) => {
   const videoURL = req.query.url;
 
@@ -276,7 +226,7 @@ app.get('/api/download', async (req, res) => {
   }
 });
 
-// 🔍 Search by query
+// Search videos by query
 app.get('/api/search', async (req, res) => {
   const query = req.query.q;
   if (!query) {
@@ -298,44 +248,7 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-
-
-
-// // 🧠 Fetch video metadata + formats
-// app.get('/api/download-info', async (req, res) => {
-//   const videoURL = req.query.url;
-
-//   if (!ytdl.validateURL(videoURL)) {
-//     return res.status(400).send('Invalid YouTube URL');
-//   }
-
-//   try {
-//     const info = await ytdl.getInfo(videoURL);
-//     const formats = info.formats
-//       .filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel)
-//       .map(f => ({
-//         qualityLabel: f.qualityLabel,
-//         container: f.container,
-//         url: f.url
-//       }));
-
-//     res.json({
-//       title: info.videoDetails.title,
-//       thumbnail: info.videoDetails.thumbnails.pop().url,
-//       formats
-//     });
-//   } catch (err) {
-//     console.error('Download info error:', err);
-//     res.status(500).json({ error: 'Could not retrieve download info' });
-//   }
-// });
-
-
-
-
-// ✅ Updated /api/download-info for Clean Quality Options
-
-// 📺 Clean download options with unique quality labels and AV only
+// Get video info + quality formats (mp4 with video+audio)
 app.get('/api/download-info', async (req, res) => {
   const videoURL = req.query.url;
 
@@ -346,12 +259,10 @@ app.get('/api/download-info', async (req, res) => {
   try {
     const info = await ytdl.getInfo(videoURL);
 
-    // Filter only mp4 formats with both video+audio
     const filteredFormats = info.formats.filter(f =>
       f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel
     );
 
-    // Deduplicate by qualityLabel
     const uniqueByQuality = {};
     filteredFormats.forEach(f => {
       if (!uniqueByQuality[f.qualityLabel]) {
@@ -370,19 +281,22 @@ app.get('/api/download-info', async (req, res) => {
       thumbnail: info.videoDetails.thumbnails.at(-1).url,
       formats
     });
-
   } catch (err) {
     console.error('Info error:', err);
     res.status(500).json({ error: 'Could not retrieve download info' });
   }
 });
 
-
-
-
-
-
-
 app.listen(3000, () => {
   console.log('✅ Server running on http://localhost:3000');
 });
+
+
+
+
+
+
+
+
+
+
