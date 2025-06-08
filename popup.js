@@ -1,40 +1,3 @@
-
-// document.getElementById('searchBtn').addEventListener('click', async () => {
-//   const query = document.getElementById('searchInput').value.trim();
-//   const results = document.getElementById('results');
-//   results.innerHTML = 'Loading...';
-
-//   try {
-//     const res = await fetch(`http://localhost:3000/api/search?q=${encodeURIComponent(query)}`);
-//     if (!res.ok) throw new Error('Server error');
-
-//     const data = await res.json();
-//     results.innerHTML = '';
-
-//     data.results.forEach(video => {
-//       const div = document.createElement('div');
-//       div.className = 'video-item';
-
-//       div.innerHTML = `
-//         <img src="${video.thumbnail}" alt="${video.title}">
-//         <strong>${video.title}</strong>
-//         <button onclick="window.open('http://localhost:3000/api/download?url=https://www.youtube.com/watch?v=${video.id}', '_blank')">Download</button>
-//       `;
-
-//       results.appendChild(div);
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     results.innerHTML = 'Error fetching search results.';
-//   }
-// });
-
-
-
-
-
-
-
 // ✅ 1. YouTube URL search not working
 // Cause: Your popup.js sends all input to /api/search, even if it's a full YouTube URL like https://www.youtube.com/watch?v=....
 
@@ -177,6 +140,16 @@
 
 
 
+
+
+
+
+
+
+
+
+const API_BASE = "https://yt-server-qo6z.onrender.com";
+
 document.getElementById('searchBtn').addEventListener('click', async () => {
   const query = document.getElementById('searchInput').value.trim();
   const results = document.getElementById('results');
@@ -188,7 +161,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   if (ytUrlRegex.test(query)) {
     // 🎯 Handle direct video URL
     try {
-      const res = await fetch(`http://localhost:3000/api/download-info?url=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('Failed to fetch video info');
 
       const data = await res.json();
@@ -214,7 +187,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   } else {
     // 🔍 Handle search query
     try {
-      const res = await fetch(`http://localhost:3000/api/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('Search failed');
 
       const data = await res.json();
@@ -235,7 +208,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
         btn.onclick = async () => {
           // Show download options dynamically
           results.innerHTML = 'Loading download options...';
-          const infoRes = await fetch(`http://localhost:3000/api/download-info?url=https://www.youtube.com/watch?v=${video.videoId}`);
+          const infoRes = await fetch(`${API_BASE}/api/download-info?url=https://www.youtube.com/watch?v=${video.videoId}`);
           const info = await infoRes.json();
 
           results.innerHTML = `
@@ -265,14 +238,3 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
     }
   }
 });
-
-
-
-
-
-
-
-
-
-
-
