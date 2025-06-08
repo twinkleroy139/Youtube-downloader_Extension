@@ -1,39 +1,3 @@
-// const express = require('express');
-// const ytdl = require('ytdl-core');
-// const cors = require('cors');
-
-// const app = express();
-// app.use(cors());
-
-// app.get('/api/download', async (req, res) => {
-//   const url = req.query.url;
-
-//   if (!ytdl.validateURL(url)) {
-//     return res.status(400).json({ error: 'Invalid YouTube URL' });
-//   }
-
-//   const info = await ytdl.getInfo(url);
-//   const formats = ytdl.filterFormats(info.formats, 'videoandaudio');
-
-//   const response = formats.map(format => ({
-//     quality: format.qualityLabel,
-//     format: format.container,
-//     downloadUrl: format.url
-//   }));
-
-//   res.json({ title: info.videoDetails.title, qualities: response });
-// });
-
-// const PORT = 3000;
-// app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-
-
-
-
-
-
-
-
 // ✅ SOLUTION: Switch to a working public API (no decryption needed)
 // Let’s fix this quickly by using a stable public API instead of ytdl-core.
 
@@ -197,106 +161,149 @@
 
 
 
+// const express = require('express');
+// const cors = require('cors');
+// const ytdl = require('@distube/ytdl-core');
+// const ytSearch = require('yt-search');
+
+// const app = express();
+// app.use(cors());
+
+// // Download video file (direct streaming)
+// app.get('/api/download', async (req, res) => {
+//   const videoURL = req.query.url;
+
+//   if (!ytdl.validateURL(videoURL)) {
+//     return res.status(400).send('Invalid YouTube URL');
+//   }
+
+//   try {
+//     const info = await ytdl.getInfo(videoURL);
+//     const title = info.videoDetails.title.replace(/[^\w\s]/gi, '');
+
+//     res.header('Content-Disposition', `attachment; filename="${title}.mp4"`);
+
+//     ytdl(videoURL, { format: 'mp4' }).pipe(res);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send('Download failed');
+//   }
+// });
+
+// // Search videos by query
+// app.get('/api/search', async (req, res) => {
+//   const query = req.query.q;
+//   if (!query) {
+//     return res.status(400).json({ error: 'Query parameter is required' });
+//   }
+
+//   try {
+//     const result = await ytSearch(query);
+//     const videos = result.videos.slice(0, 10).map(video => ({
+//       videoId: video.videoId,
+//       title: video.title,
+//       thumbnail: video.thumbnail
+//     }));
+
+//     res.json(videos);
+//   } catch (err) {
+//     console.error('Search error:', err);
+//     res.status(500).json({ error: 'Search failed' });
+//   }
+// });
+
+// // Get video info + quality formats (mp4 with video+audio)
+// app.get('/api/download-info', async (req, res) => {
+//   const videoURL = req.query.url;
+
+//   if (!ytdl.validateURL(videoURL)) {
+//     return res.status(400).json({ error: 'Invalid YouTube URL' });
+//   }
+
+//   try {
+//     const info = await ytdl.getInfo(videoURL);
+
+//     const filteredFormats = info.formats.filter(f =>
+//       f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel
+//     );
+
+//     const uniqueByQuality = {};
+//     filteredFormats.forEach(f => {
+//       if (!uniqueByQuality[f.qualityLabel]) {
+//         uniqueByQuality[f.qualityLabel] = {
+//           qualityLabel: f.qualityLabel,
+//           itag: f.itag,
+//           url: f.url
+//         };
+//       }
+//     });
+
+//     const formats = Object.values(uniqueByQuality);
+
+//     res.json({
+//       title: info.videoDetails.title,
+//       thumbnail: info.videoDetails.thumbnails.at(-1).url,
+//       formats
+//     });
+//   } catch (err) {
+//     console.error('Info error:', err);
+//     res.status(500).json({ error: 'Could not retrieve download info' });
+//   }
+// });
+
+// app.listen(3000, () => {
+//   console.log('✅ Server running on http://localhost:3000');
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
+const ytdl = require('ytdl-core');
 const cors = require('cors');
-const ytdl = require('@distube/ytdl-core');
-const ytSearch = require('yt-search');
 
 const app = express();
 app.use(cors());
 
-// Download video file (direct streaming)
-app.get('/api/download', async (req, res) => {
-  const videoURL = req.query.url;
-
-  if (!ytdl.validateURL(videoURL)) {
-    return res.status(400).send('Invalid YouTube URL');
-  }
-
-  try {
-    const info = await ytdl.getInfo(videoURL);
-    const title = info.videoDetails.title.replace(/[^\w\s]/gi, '');
-
-    res.header('Content-Disposition', `attachment; filename="${title}.mp4"`);
-
-    ytdl(videoURL, { format: 'mp4' }).pipe(res);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Download failed');
-  }
-});
-
-// Search videos by query
-app.get('/api/search', async (req, res) => {
-  const query = req.query.q;
-  if (!query) {
-    return res.status(400).json({ error: 'Query parameter is required' });
-  }
-
-  try {
-    const result = await ytSearch(query);
-    const videos = result.videos.slice(0, 10).map(video => ({
-      videoId: video.videoId,
-      title: video.title,
-      thumbnail: video.thumbnail
-    }));
-
-    res.json(videos);
-  } catch (err) {
-    console.error('Search error:', err);
-    res.status(500).json({ error: 'Search failed' });
-  }
-});
-
-// Get video info + quality formats (mp4 with video+audio)
 app.get('/api/download-info', async (req, res) => {
-  const videoURL = req.query.url;
-
-  if (!ytdl.validateURL(videoURL)) {
-    return res.status(400).json({ error: 'Invalid YouTube URL' });
-  }
-
+  const videoUrl = req.query.url;
   try {
-    const info = await ytdl.getInfo(videoURL);
+    const urlObj = new URL(videoUrl);
+    const videoId = urlObj.hostname === 'youtu.be'
+      ? urlObj.pathname.slice(1)
+      : new URLSearchParams(urlObj.search).get('v');
 
-    const filteredFormats = info.formats.filter(f =>
-      f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel
-    );
+    if (!videoId) return res.status(400).json({ error: 'Invalid YouTube URL' });
 
-    const uniqueByQuality = {};
-    filteredFormats.forEach(f => {
-      if (!uniqueByQuality[f.qualityLabel]) {
-        uniqueByQuality[f.qualityLabel] = {
-          qualityLabel: f.qualityLabel,
-          itag: f.itag,
-          url: f.url
-        };
-      }
-    });
+    const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const info = await ytdl.getInfo(cleanUrl);
 
-    const formats = Object.values(uniqueByQuality);
+    const formats = info.formats.filter(f => f.hasVideo && f.hasAudio).map(f => ({
+      qualityLabel: f.qualityLabel,
+      container: f.container,
+      url: f.url,
+    }));
 
     res.json({
       title: info.videoDetails.title,
-      thumbnail: info.videoDetails.thumbnails.at(-1).url,
+      thumbnail: info.videoDetails.thumbnails.pop().url,
       formats
     });
   } catch (err) {
-    console.error('Info error:', err);
-    res.status(500).json({ error: 'Could not retrieve download info' });
+    console.error('Error:', err.message);
+    res.status(500).json({ error: 'Failed to retrieve video info' });
   }
 });
 
-app.listen(3000, () => {
-  console.log('✅ Server running on http://localhost:3000');
-});
-
-
-
-
-
-
-
-
-
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
