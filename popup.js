@@ -147,7 +147,6 @@
 
 
 
-
 const API_BASE = "https://yt-server-qo6z.onrender.com";
 
 document.getElementById('searchBtn').addEventListener('click', async () => {
@@ -155,11 +154,10 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   const results = document.getElementById('results');
   results.innerHTML = 'Loading...';
 
-  // Check if input is a valid YouTube URL
+  // YouTube URL regex
   const ytUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
   if (ytUrlRegex.test(query)) {
-    // 🎯 Handle direct video URL
     try {
       const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('Failed to fetch video info');
@@ -183,9 +181,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
       console.error(err);
       results.innerHTML = 'Error fetching video info.';
     }
-
   } else {
-    // 🔍 Handle search query
     try {
       const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('Search failed');
@@ -206,7 +202,6 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
         const btn = document.createElement('button');
         btn.textContent = 'Download';
         btn.onclick = async () => {
-          // Show download options dynamically
           results.innerHTML = 'Loading download options...';
           const infoRes = await fetch(`${API_BASE}/api/download-info?url=https://www.youtube.com/watch?v=${video.videoId}`);
           const info = await infoRes.json();
