@@ -154,15 +154,13 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   const results = document.getElementById('results');
   results.innerHTML = 'Loading...';
 
-  // YouTube URL regex
   const ytUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
   if (ytUrlRegex.test(query)) {
     try {
       const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(query)}`);
-      if (!res.ok) throw new Error('Failed to fetch video info');
-
       const data = await res.json();
+
       results.innerHTML = `
         <div class="video-item">
           <img src="${data.thumbnail}" alt="Thumbnail">
@@ -178,17 +176,14 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
         results.appendChild(btn);
       });
     } catch (err) {
-      console.error(err);
       results.innerHTML = 'Error fetching video info.';
     }
   } else {
     try {
       const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
-      if (!res.ok) throw new Error('Search failed');
-
       const data = await res.json();
-      results.innerHTML = '';
 
+      results.innerHTML = '';
       data.forEach(video => {
         const div = document.createElement('div');
         div.className = 'video-item';
@@ -228,7 +223,6 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
         results.appendChild(div);
       });
     } catch (err) {
-      console.error(err);
       results.innerHTML = 'Error fetching search results.';
     }
   }

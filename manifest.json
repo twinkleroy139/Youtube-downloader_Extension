@@ -4,13 +4,13 @@
   "version": "1.0",
   "description": "Safely download YouTube videos using your own API server.",
   "permissions": ["activeTab", "scripting", "downloads", "storage"],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["https://yt-server-qo6z.onrender.com/*"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/Adobe Express - file.png",
-      "48": "icons/Adobe Express - file.png",
-      "128": "icons/ytLogo1.png"
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
     }
   },
   "background": {
