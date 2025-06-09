@@ -217,17 +217,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 const express = require('express');
 const cors = require('cors');
 const ytdl = require('@distube/ytdl-core');
@@ -238,7 +227,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
-// Route: Get download info
+// Route: Get video download info
 app.get('/api/download-info', async (req, res) => {
   const videoUrl = decodeURIComponent(req.query.url || '');
 
@@ -248,19 +237,28 @@ app.get('/api/download-info', async (req, res) => {
     }
 
     const info = await ytdl.getInfo(videoUrl);
-    const format = ytdl.chooseFormat(info.formats, { quality: '18' });
+
+    const formats = info.formats
+      .filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel)
+      .map(f => ({
+        url: f.url,
+        qualityLabel: f.qualityLabel,
+        container: f.container,
+        mimeType: f.mimeType
+      }));
 
     res.json({
       title: info.videoDetails.title,
-      url: format.url
+      thumbnail: info.videoDetails.thumbnails?.[0]?.url || '',
+      formats
     });
   } catch (err) {
-    console.error('Error fetching video info:', err.message);
+    console.error('Download info error:', err.message);
     res.status(500).json({ error: 'Failed to fetch video info' });
   }
 });
 
-// Route: Search YouTube
+// Route: YouTube search
 app.get('/api/search', async (req, res) => {
   const query = req.query.q;
 
@@ -268,7 +266,7 @@ app.get('/api/search', async (req, res) => {
     const result = await ytSearch(query);
     const videos = result.videos.slice(0, 5).map(video => ({
       title: video.title,
-      url: video.url,
+      videoId: video.videoId,
       thumbnail: video.thumbnail,
       duration: video.timestamp
     }));
@@ -283,3 +281,10 @@ app.get('/api/search', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
+
+
+
+
+
+
