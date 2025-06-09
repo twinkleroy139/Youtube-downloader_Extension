@@ -265,15 +265,22 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+
+
 // Route: Download info
 app.get('/api/download-info', async (req, res) => {
-  const videoUrl = decodeURIComponent(req.query.url || '');
-  if (!ytdl.validateURL(videoUrl)) {
-    return res.status(400).json({ error: 'Invalid YouTube URL' });
-  }
-
   try {
+    let videoUrl = decodeURIComponent(req.query.url || '');
+
+    // ✅ Strip off any ?si=... or other query params
+    videoUrl = videoUrl.split('&')[0].split('?')[0];
+
+    if (!ytdl.validateURL(videoUrl)) {
+      return res.status(400).json({ error: 'Invalid YouTube URL' });
+    }
+
     const info = await ytdl.getInfo(videoUrl);
+
     const formats = info.formats
       .filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel)
       .map(f => ({
@@ -289,10 +296,13 @@ app.get('/api/download-info', async (req, res) => {
       formats
     });
   } catch (err) {
-    console.error('Download info failed:', err.message);
-    res.status(500).json({ error: 'Failed to get video info' });
+    console.error('Download info error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch video info' });
   }
 });
+
+
+
 
 // Start server
 app.listen(PORT, () => {
