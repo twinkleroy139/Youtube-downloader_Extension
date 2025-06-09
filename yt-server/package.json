@@ -6,14 +6,20 @@
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["youtube", "downloader", "api", "express"],
+  "keywords": [
+    "youtube",
+    "downloader",
+    "api",
+    "express"
+  ],
   "author": "twinkleroy139",
   "license": "MIT",
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.11",
     "axios": "^1.9.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "ytdl-core": "^4.11.4",
-    "yt-search": "^2.13.1"
+    "yt-search": "^2.13.1",
+    "ytdl-core": "^4.11.4"
   }
 }
