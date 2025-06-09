@@ -1,49 +1,3 @@
-// ✅ SOLUTION: Switch to a working public API (no decryption needed)
-// Let’s fix this quickly by using a stable public API instead of ytdl-core.
-
-// const express = require('express');
-// const cors = require('cors');
-// const axios = require('axios');
-
-// const app = express();
-// const PORT = 3000;
-
-// app.use(cors());
-
-// app.get('/api/download', async (req, res) => {
-//   const videoUrl = req.query.url;
-
-//   if (!videoUrl) return res.status(400).json({ error: 'URL is required' });
-
-//   try {
-//     // Use a third-party service like SnapAPI (no need to extract manually)
-//     const apiUrl = `https://snapapi.online/api/analyze?url=${encodeURIComponent(videoUrl)}`;
-
-//     const response = await axios.get(apiUrl);
-//     const data = response.data;
-
-//     res.json(data);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: 'Failed to fetch video data' });
-//   }
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`✅ Server running on http://localhost:${PORT}`);
-// });
-
-
-
-
-
-
-
-
-
-
-
-
 // // ✅ Fix Options
 // // Option 1: Use Only ytdl-core (Recommended for Local Use)
 // // Instead of relying on snapapi.online, 
@@ -267,43 +221,65 @@
 
 
 
+
+
+
+
+
+
+
 const express = require('express');
-const ytdl = require('ytdl-core');
 const cors = require('cors');
+const ytdl = require('@distube/ytdl-core');
+const ytSearch = require('yt-search');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 
+// Route: Get download info
 app.get('/api/download-info', async (req, res) => {
-  const videoUrl = req.query.url;
+  const videoUrl = decodeURIComponent(req.query.url || '');
+
   try {
-    const urlObj = new URL(videoUrl);
-    const videoId = urlObj.hostname === 'youtu.be'
-      ? urlObj.pathname.slice(1)
-      : new URLSearchParams(urlObj.search).get('v');
+    if (!ytdl.validateURL(videoUrl)) {
+      return res.status(400).json({ error: 'Invalid YouTube URL' });
+    }
 
-    if (!videoId) return res.status(400).json({ error: 'Invalid YouTube URL' });
-
-    const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const info = await ytdl.getInfo(cleanUrl);
-
-    const formats = info.formats.filter(f => f.hasVideo && f.hasAudio).map(f => ({
-      qualityLabel: f.qualityLabel,
-      container: f.container,
-      url: f.url,
-    }));
+    const info = await ytdl.getInfo(videoUrl);
+    const format = ytdl.chooseFormat(info.formats, { quality: '18' });
 
     res.json({
       title: info.videoDetails.title,
-      thumbnail: info.videoDetails.thumbnails.pop().url,
-      formats
+      url: format.url
     });
   } catch (err) {
-    console.error('Error:', err.message);
-    res.status(500).json({ error: 'Failed to retrieve video info' });
+    console.error('Error fetching video info:', err.message);
+    res.status(500).json({ error: 'Failed to fetch video info' });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Route: Search YouTube
+app.get('/api/search', async (req, res) => {
+  const query = req.query.q;
 
+  try {
+    const result = await ytSearch(query);
+    const videos = result.videos.slice(0, 5).map(video => ({
+      title: video.title,
+      url: video.url,
+      thumbnail: video.thumbnail,
+      duration: video.timestamp
+    }));
+
+    res.json(videos);
+  } catch (err) {
+    console.error('Search error:', err.message);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
