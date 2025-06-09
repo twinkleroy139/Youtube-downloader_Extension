@@ -184,7 +184,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
       const data = await res.json();
 
       results.innerHTML = '';
-      data.forEach(video => {
+      data.forEach(video => {cd
         const div = document.createElement('div');
         div.className = 'video-item';
 
@@ -198,7 +198,11 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
         btn.textContent = 'Download';
         btn.onclick = async () => {
           results.innerHTML = 'Loading download options...';
-          const infoRes = await fetch(`${API_BASE}/api/download-info?url=https://www.youtube.com/watch?v=${video.videoId}`);
+
+          // When clicking "Download" on search results
+        const infoRes = await fetch(`${API_BASE}/api/download-info?url=https://www.youtube.com/watch?v=${video.videoId}`);
+
+          
           const info = await infoRes.json();
 
           results.innerHTML = `
