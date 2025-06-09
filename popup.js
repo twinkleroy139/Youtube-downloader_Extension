@@ -153,6 +153,10 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   const query = document.getElementById('searchInput').value.trim();
   const results = document.getElementById('results');
   results.innerHTML = 'Loading...';
+  const inputUrl = document.getElementById("urlInput").value.trim();
+  cleanUrl = inputUrl.split("&")[0].split("?")[0];
+  fetch(`https://yt-server-qo6z.onrender.com/api/download-info?url=${encodeURIComponent(inputUrl)}`)
+
 
   const ytUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
