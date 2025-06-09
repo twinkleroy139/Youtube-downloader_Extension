@@ -1,3 +1,3 @@
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('YT Downloader extension installed.');
+  console.log("YT Downloader extension installed.");
 });

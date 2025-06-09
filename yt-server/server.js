@@ -1,12 +1,3 @@
-// ✅ The Real Problem
-// You're probably stripping query params incorrectly or validating 
-// YouTube URLs too strictly. 
-// That’s why even valid links return "Invalid YouTube URL".
-
-// 🔧 Fix your server.js
-// Here’s the correct and fixed version of the GET /api/download-info route:
-
-
 const express = require("express");
 const ytdl = require("@distube/ytdl-core");
 const cors = require("cors");
@@ -16,7 +7,6 @@ app.use(cors());
 
 const PORT = process.env.PORT || 10000;
 
-// ✅ Utility to clean and validate YouTube URLs
 function cleanYouTubeUrl(url) {
   try {
     const parsedUrl = new URL(url);
@@ -25,7 +15,6 @@ function cleanYouTubeUrl(url) {
       parsedUrl.hostname.includes("youtube.com") ||
       parsedUrl.hostname.includes("youtu.be")
     ) {
-      // Get the full watch URL with only the video ID
       const videoId =
         parsedUrl.hostname === "youtu.be"
           ? parsedUrl.pathname.slice(1)
@@ -37,12 +26,11 @@ function cleanYouTubeUrl(url) {
     }
 
     return null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-// ✅ API endpoint
 app.get("/api/download-info", async (req, res) => {
   const originalUrl = req.query.url;
   const cleanedUrl = cleanYouTubeUrl(originalUrl);
@@ -61,9 +49,7 @@ app.get("/api/download-info", async (req, res) => {
       duration: info.videoDetails.lengthSeconds,
       formats: formats.map((f) => ({
         quality: f.qualityLabel,
-        itag: f.itag,
         container: f.container,
-        size: f.contentLength,
         url: f.url,
       })),
     };
@@ -78,7 +64,6 @@ app.get("/api/download-info", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
-
 
 
 

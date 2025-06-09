@@ -1,3 +1,65 @@
+const API_BASE = "https://yt-server-qo6z.onrender.com";
+
+document.getElementById("searchBtn").addEventListener("click", async () => {
+  const input = document.getElementById("searchInput");
+  if (!input) return;
+
+  const query = input.value.trim();
+  const results = document.getElementById("results");
+  results.innerHTML = "Loading...";
+
+  const ytUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+
+  if (ytUrlRegex.test(query)) {
+    // It's a YouTube URL
+    try {
+      const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(query)}`);
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      results.innerHTML = `
+        <div class="video-item">
+          <img src="https://i.ytimg.com/vi/${data.formats[0].url.match(/v=([^&]+)/)?.[1]}/hqdefault.jpg" />
+          <strong>${data.title}</strong>
+        </div>
+        <div><b>Select Quality to Download:</b></div>
+      `;
+
+      data.formats.forEach(format => {
+        const btn = document.createElement('button');
+        btn.textContent = `${format.quality || 'Audio Only'} (${format.container})`;
+        btn.onclick = () => window.open(format.url, '_blank');
+        results.appendChild(btn);
+      });
+    } catch (err) {
+      console.error(err);
+      results.innerHTML = 'Error fetching video info.';
+    }
+  } else {
+    // It's a keyword search (TODO: implement search API if needed)
+    results.innerHTML = 'Please enter a valid YouTube URL.';
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ✅ 1. YouTube URL search not working
 // Cause: Your popup.js sends all input to /api/search, even if it's a full YouTube URL like https://www.youtube.com/watch?v=....
 
@@ -147,91 +209,105 @@
 
 
 
-const API_BASE = "https://yt-server-qo6z.onrender.com";
+// const API_BASE = "https://yt-server-qo6z.onrender.com";
 
-document.getElementById('searchBtn').addEventListener('click', async () => {
-  const query = document.getElementById('searchInput').value.trim();
-  const results = document.getElementById('results');
-  results.innerHTML = 'Loading...';
-  const inputUrl = document.getElementById("urlInput").value.trim();
-  cleanUrl = inputUrl.split("&")[0].split("?")[0];
-  fetch(`https://yt-server-qo6z.onrender.com/api/download-info?url=${encodeURIComponent(inputUrl)}`)
+// document.getElementById('searchBtn').addEventListener('click', async () => {
+//   const query = document.getElementById('urlInput').value.trim();
+//   const results = document.getElementById('results');
+//   results.innerHTML = 'Loading...';
 
+//   const ytUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
-  const ytUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+//   if (ytUrlRegex.test(query)) {
+//     // It's a direct YouTube video URL
+//     try {
+//       const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(query)}`);
+//       const data = await res.json();
 
-  if (ytUrlRegex.test(query)) {
-    try {
-      const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(query)}`);
-      const data = await res.json();
+//       if (data.error) {
+//         results.innerHTML = `Error: ${data.error}`;
+//         return;
+//       }
 
-      results.innerHTML = `
-        <div class="video-item">
-          <img src="${data.thumbnail}" alt="Thumbnail">
-          <strong>${data.title}</strong>
-        </div>
-        <div><b>Select Quality to Download:</b></div>
-      `;
+//       results.innerHTML = `
+//         <div class="video-item">
+//           <img src="${data.thumbnail}" alt="Thumbnail">
+//           <strong>${data.title}</strong>
+//         </div>
+//         <div><b>Select Quality to Download:</b></div>
+//       `;
 
-      data.formats.forEach(format => {
-        const btn = document.createElement('button');
-        btn.textContent = `${format.qualityLabel} (${format.container})`;
-        btn.onclick = () => window.open(format.url, '_blank');
-        results.appendChild(btn);
-      });
-    } catch (err) {
-      results.innerHTML = 'Error fetching video info.';
-    }
-  } else {
-    try {
-      const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
+//       data.formats.forEach(format => {
+//         const btn = document.createElement('button');
+//         btn.textContent = `${format.qualityLabel || format.quality} (${format.container})`;
+//         btn.onclick = () => window.open(format.url, '_blank');
+//         results.appendChild(btn);
+//       });
+//     } catch (err) {
+//       results.innerHTML = 'Error fetching video info.';
+//     }
+//   } else {
+//     // It's a search term
+//     try {
+//       const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
+//       const data = await res.json();
 
-      results.innerHTML = '';
-      data.forEach(video => {cd
-        const div = document.createElement('div');
-        div.className = 'video-item';
+//       if (!Array.isArray(data)) {
+//         results.innerHTML = 'Unexpected response format.';
+//         return;
+//       }
 
-        const thumb = document.createElement('img');
-        thumb.src = video.thumbnail;
+//       results.innerHTML = '';
 
-        const title = document.createElement('strong');
-        title.textContent = video.title;
+//       data.forEach(video => {
+//         const div = document.createElement('div');
+//         div.className = 'video-item';
 
-        const btn = document.createElement('button');
-        btn.textContent = 'Download';
-        btn.onclick = async () => {
-          results.innerHTML = 'Loading download options...';
+//         const thumb = document.createElement('img');
+//         thumb.src = video.thumbnail;
 
-          // When clicking "Download" on search results
-        const infoRes = await fetch(`${API_BASE}/api/download-info?url=https://www.youtube.com/watch?v=${video.videoId}`);
+//         const title = document.createElement('strong');
+//         title.textContent = video.title;
 
-          
-          const info = await infoRes.json();
+//         const btn = document.createElement('button');
+//         btn.textContent = 'Download';
+//         btn.onclick = async () => {
+//           results.innerHTML = 'Loading download options...';
+//           try {
+//             const infoRes = await fetch(`${API_BASE}/api/download-info?url=https://www.youtube.com/watch?v=${video.videoId}`);
+//             const info = await infoRes.json();
 
-          results.innerHTML = `
-            <div class="video-item">
-              <img src="${info.thumbnail}" alt="Thumbnail">
-              <strong>${info.title}</strong>
-            </div>
-            <div><b>Select Quality to Download:</b></div>
-          `;
+//             if (info.error) {
+//               results.innerHTML = `Error: ${info.error}`;
+//               return;
+//             }
 
-          info.formats.forEach(format => {
-            const b = document.createElement('button');
-            b.textContent = `${format.qualityLabel} (${format.container})`;
-            b.onclick = () => window.open(format.url, '_blank');
-            results.appendChild(b);
-          });
-        };
+//             results.innerHTML = `
+//               <div class="video-item">
+//                 <img src="${info.thumbnail}" alt="Thumbnail">
+//                 <strong>${info.title}</strong>
+//               </div>
+//               <div><b>Select Quality to Download:</b></div>
+//             `;
 
-        div.appendChild(thumb);
-        div.appendChild(title);
-        div.appendChild(btn);
-        results.appendChild(div);
-      });
-    } catch (err) {
-      results.innerHTML = 'Error fetching search results.';
-    }
-  }
-});
+//             info.formats.forEach(format => {
+//               const b = document.createElement('button');
+//               b.textContent = `${format.qualityLabel || format.quality} (${format.container})`;
+//               b.onclick = () => window.open(format.url, '_blank');
+//               results.appendChild(b);
+//             });
+//           } catch (err) {
+//             results.innerHTML = 'Error loading download info.';
+//           }
+//         };
+
+//         div.appendChild(thumb);
+//         div.appendChild(title);
+//         div.appendChild(btn);
+//         results.appendChild(div);
+//       });
+//     } catch (err) {
+//       results.innerHTML = 'Error fetching search results.';
+//     }
+//   }
+// });
