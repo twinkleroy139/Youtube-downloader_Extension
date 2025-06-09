@@ -217,6 +217,17 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const cors = require('cors');
 const ytdl = require('@distube/ytdl-core');
@@ -227,17 +238,42 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
-// Route: Get video download info
-app.get('/api/download-info', async (req, res) => {
-  const videoUrl = decodeURIComponent(req.query.url || '');
+// Test root route
+app.get('/', (req, res) => {
+  res.send('🟢 YouTube Downloader API is running');
+});
+
+// Route: Search YouTube
+app.get('/api/search', async (req, res) => {
+  const query = req.query.q;
+  console.log('🔍 Search called with:', query);
+
+  if (!query) return res.status(400).json({ error: 'Missing query' });
 
   try {
-    if (!ytdl.validateURL(videoUrl)) {
-      return res.status(400).json({ error: 'Invalid YouTube URL' });
-    }
+    const result = await ytSearch(query);
+    const videos = result.videos.slice(0, 5).map(video => ({
+      title: video.title,
+      videoId: video.videoId,
+      thumbnail: video.thumbnail,
+      duration: video.timestamp
+    }));
+    res.json(videos);
+  } catch (err) {
+    console.error('Search failed:', err.message);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
 
+// Route: Download info
+app.get('/api/download-info', async (req, res) => {
+  const videoUrl = decodeURIComponent(req.query.url || '');
+  if (!ytdl.validateURL(videoUrl)) {
+    return res.status(400).json({ error: 'Invalid YouTube URL' });
+  }
+
+  try {
     const info = await ytdl.getInfo(videoUrl);
-
     const formats = info.formats
       .filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel)
       .map(f => ({
@@ -253,48 +289,12 @@ app.get('/api/download-info', async (req, res) => {
       formats
     });
   } catch (err) {
-    console.error('Download info error:', err.message);
-    res.status(500).json({ error: 'Failed to fetch video info' });
+    console.error('Download info failed:', err.message);
+    res.status(500).json({ error: 'Failed to get video info' });
   }
 });
 
-// Route: YouTube search
-app.get('/api/search', async (req, res) => {
-  const query = req.query.q;
-  console.log('🔍 /api/search called with q =', query);
-
-  if (!query) {
-    console.warn('Missing query parameter');
-    return res.status(400).json({ error: 'Missing query parameter' });
-  }
-
-  try {
-    const result = await ytSearch(query);
-    console.log('Search result count:', result.videos.length);
-    const videos = result.videos.slice(0, 5).map(v => ({
-      title: v.title,
-      videoId: v.videoId,
-      thumbnail: v.thumbnail,
-      duration: v.timestamp
-    }));
-    return res.json(videos);
-  } catch (err) {
-    console.error('Search error:', err.message);
-    return res.status(500).json({ error: 'Search failed' });
-  }
-});
-
-
-
-
-
+// Start server
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
-
-
-
-
-
-
-
