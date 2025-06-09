@@ -1,87 +1,50 @@
 const express = require("express");
-const ytdl = require("@distube/ytdl-core");
-const ytSearch = require("yt-search");
 const cors = require("cors");
+const { exec } = require("child_process");
 
 const app = express();
 app.use(cors());
 
 const PORT = process.env.PORT || 10000;
 
-function cleanYouTubeUrl(url) {
-  try {
-    const parsedUrl = new URL(url);
-    if (
-      parsedUrl.hostname.includes("youtube.com") ||
-      parsedUrl.hostname.includes("youtu.be")
-    ) {
-      const videoId =
-        parsedUrl.hostname === "youtu.be"
-          ? parsedUrl.pathname.slice(1)
-          : parsedUrl.searchParams.get("v");
+app.get("/api/download-info", (req, res) => {
+  const videoUrl = req.query.url;
+  if (!videoUrl) return res.status(400).json({ error: "No URL provided" });
 
-      if (!videoId) return null;
-      return `https://www.youtube.com/watch?v=${videoId}`;
+  const cmd = `yt-dlp -J --no-warnings "${videoUrl}"`;
+
+  exec(cmd, (error, stdout, stderr) => {
+    if (error) {
+      console.error("yt-dlp error:", stderr || error.message);
+      return res.status(500).json({ error: "yt-dlp failed to fetch video info" });
     }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
-// ✅ Download Info Route
-app.get("/api/download-info", async (req, res) => {
-  const originalUrl = req.query.url;
-  const cleanedUrl = cleanYouTubeUrl(originalUrl);
-  if (!cleanedUrl) {
-    return res.status(400).json({ error: "Invalid YouTube URL" });
-  }
+    try {
+      const info = JSON.parse(stdout);
+      const formats = info.formats
+        .filter((f) => f.vcodec !== "none" && f.acodec !== "none")
+        .map((f) => ({
+          quality: f.format_note,
+          container: f.ext,
+          url: f.url,
+        }));
 
-  try {
-    const info = await ytdl.getInfo(cleanedUrl);
-    const formats = ytdl.filterFormats(info.formats, "audioandvideo");
-
-    const videoInfo = {
-      title: info.videoDetails.title,
-      author: info.videoDetails.author.name,
-      duration: info.videoDetails.lengthSeconds,
-      formats: formats.map((f) => ({
-        quality: f.qualityLabel,
-        container: f.container,
-        url: f.url,
-      })),
-    };
-
-    res.json(videoInfo);
-  } catch (err) {
-    console.error("Download info error:", err.message);
-    res.status(500).json({ error: "Failed to fetch video info" });
-  }
-});
-
-// ✅ Search Route
-app.get("/api/search", async (req, res) => {
-  const q = req.query.q;
-  if (!q) return res.status(400).json({ error: "Missing search query" });
-
-  try {
-    const { videos } = await ytSearch(q);
-    const results = videos.slice(0, 5).map((video) => ({
-      title: video.title,
-      videoId: video.videoId,
-      thumbnail: video.thumbnail,
-      duration: video.timestamp,
-    }));
-    res.json(results);
-  } catch (err) {
-    console.error("Search error:", err.message);
-    res.status(500).json({ error: "Search failed" });
-  }
+      res.json({
+        title: info.title,
+        author: info.uploader,
+        duration: info.duration,
+        formats,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to parse video info" });
+    }
+  });
 });
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
 
 
