@@ -1,5 +1,6 @@
 const express = require("express");
 const ytdl = require("@distube/ytdl-core");
+const ytSearch = require("yt-search");
 const cors = require("cors");
 
 const app = express();
@@ -10,7 +11,6 @@ const PORT = process.env.PORT || 10000;
 function cleanYouTubeUrl(url) {
   try {
     const parsedUrl = new URL(url);
-
     if (
       parsedUrl.hostname.includes("youtube.com") ||
       parsedUrl.hostname.includes("youtu.be")
@@ -21,20 +21,18 @@ function cleanYouTubeUrl(url) {
           : parsedUrl.searchParams.get("v");
 
       if (!videoId) return null;
-
       return `https://www.youtube.com/watch?v=${videoId}`;
     }
-
     return null;
   } catch {
     return null;
   }
 }
 
+// ✅ Download Info Route
 app.get("/api/download-info", async (req, res) => {
   const originalUrl = req.query.url;
   const cleanedUrl = cleanYouTubeUrl(originalUrl);
-
   if (!cleanedUrl) {
     return res.status(400).json({ error: "Invalid YouTube URL" });
   }
@@ -61,9 +59,30 @@ app.get("/api/download-info", async (req, res) => {
   }
 });
 
+// ✅ Search Route
+app.get("/api/search", async (req, res) => {
+  const q = req.query.q;
+  if (!q) return res.status(400).json({ error: "Missing search query" });
+
+  try {
+    const { videos } = await ytSearch(q);
+    const results = videos.slice(0, 5).map((video) => ({
+      title: video.title,
+      videoId: video.videoId,
+      thumbnail: video.thumbnail,
+      duration: video.timestamp,
+    }));
+    res.json(results);
+  } catch (err) {
+    console.error("Search error:", err.message);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
 
 
