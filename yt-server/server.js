@@ -261,22 +261,32 @@ app.get('/api/download-info', async (req, res) => {
 // Route: YouTube search
 app.get('/api/search', async (req, res) => {
   const query = req.query.q;
+  console.log('🔍 /api/search called with q =', query);
+
+  if (!query) {
+    console.warn('Missing query parameter');
+    return res.status(400).json({ error: 'Missing query parameter' });
+  }
 
   try {
     const result = await ytSearch(query);
-    const videos = result.videos.slice(0, 5).map(video => ({
-      title: video.title,
-      videoId: video.videoId,
-      thumbnail: video.thumbnail,
-      duration: video.timestamp
+    console.log('Search result count:', result.videos.length);
+    const videos = result.videos.slice(0, 5).map(v => ({
+      title: v.title,
+      videoId: v.videoId,
+      thumbnail: v.thumbnail,
+      duration: v.timestamp
     }));
-
-    res.json(videos);
+    return res.json(videos);
   } catch (err) {
     console.error('Search error:', err.message);
-    res.status(500).json({ error: 'Search failed' });
+    return res.status(500).json({ error: 'Search failed' });
   }
 });
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
