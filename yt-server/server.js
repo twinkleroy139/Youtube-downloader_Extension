@@ -1,48 +1,91 @@
-const express = require("express");
-const cors = require("cors");
-const { exec } = require("child_process");
+// using render and git global config
+const express = require('express');
+const cors = require('cors');
+const { exec } = require('child_process');
+const YtDlpWrap = require('yt-dlp-wrap').default;
+const ytSearch = require('yt-search');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
-app.use(cors());
-
 const PORT = process.env.PORT || 10000;
 
-app.get("/api/download-info", (req, res) => {
-  const videoUrl = req.query.url;
-  if (!videoUrl) return res.status(400).json({ error: "No URL provided" });
+app.use(cors());
+app.use(express.json());
 
-  const cmd = `yt-dlp -J --no-warnings "${videoUrl}"`;
+const ytDlpWrap = new YtDlpWrap("/usr/bin/yt-dlp");
 
-  exec(cmd, (error, stdout, stderr) => {
-    if (error) {
-      console.error("yt-dlp error:", stderr || error.message);
-      return res.status(500).json({ error: "yt-dlp failed to fetch video info" });
+// === Search endpoint ===
+app.get('/api/search', async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: 'Missing search query' });
+
+  try {
+    const result = await ytSearch(q);
+    const videos = result.videos.slice(0, 5).map(v => ({
+      title: v.title,
+      videoId: v.videoId,
+      url: v.url,
+      thumbnail: v.thumbnail
+    }));
+    res.json(videos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// === Download Info endpoint ===
+app.get('/api/download-info', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'Missing url' });
+
+  try {
+    const infoJson = await ytDlpWrap.getVideoInfo(url);
+    const title = infoJson.title;
+    const thumbnail = infoJson.thumbnail;
+    const formats = infoJson.formats.filter(f => f.acodec !== 'none' && f.vcodec !== 'none');
+
+    res.json({ title, thumbnail, formats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// === Download endpoint ===
+app.post('/api/download', async (req, res) => {
+  const { url, formatId } = req.body;
+  if (!url || !formatId) return res.status(400).json({ error: 'Missing url or formatId' });
+
+  const outputPath = path.resolve(__dirname, 'downloads');
+  if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath);
+
+  const outputFilename = `${Date.now()}-%(title)s.%(ext)s`;
+
+  const process = ytDlpWrap.exec([
+    url,
+    '-f', formatId,
+    '-o', path.join(outputPath, outputFilename)
+  ]);
+
+  process.once('close', (code) => {
+    if (code === 0) {
+      res.json({ success: true, message: 'Download started' });
+    } else {
+      res.status(500).json({ error: 'Download failed', code });
     }
+  });
 
-    try {
-      const info = JSON.parse(stdout);
-      const formats = info.formats
-        .filter((f) => f.vcodec !== "none" && f.acodec !== "none")
-        .map((f) => ({
-          quality: f.format_note,
-          container: f.ext,
-          url: f.url,
-        }));
-
-      res.json({
-        title: info.title,
-        author: info.uploader,
-        duration: info.duration,
-        formats,
-      });
-    } catch (err) {
-      res.status(500).json({ error: "Failed to parse video info" });
-    }
+  process.stderr.on('data', (data) => {
+    console.error(`stderr: ${data}`);
   });
 });
 
+// Serve downloads folder (optional)
+app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
 
 
@@ -61,119 +104,70 @@ app.listen(PORT, () => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // ✅ Fix Options
-// // Option 1: Use Only ytdl-core (Recommended for Local Use)
-// // Instead of relying on snapapi.online, 
-// // use ytdl-core (as you had before). 
-// // Here's a simple, working server.js example using only ytdl-core:
-
-// // server.js
+// // with local server
+// // Full working example of a YouTube downloader API using yt-dlp and yt-search
 // const express = require('express');
 // const cors = require('cors');
-// // const ytdl = require('ytdl-core');
-// // After:
-// const ytdl = require('@distube/ytdl-core');
+// const YtDlpWrap = require('yt-dlp-wrap').default; // 👈 IMPORTANT: .default!
+// const ytSearch = require('yt-search');
 
-
-
-// // 2. Update server.js to Include a Search Route
-// // Here's the updated version of your server.js with both download 
-// // and search functionality:
-
-// // server.js
-// const express = require('express');
-// const cors = require('cors');
-// const ytdl = require('@distube/ytdl-core');
-// const ytSearch = require('yt-search'); // 👈 Add this
 
 // const app = express();
+// const PORT = 10000;
+// // const ytDlpWrap = new YtDlpWrap();
+// const ytDlpWrap = new YtDlpWrap();
+
+
 // app.use(cors());
 
-// // 🎯 Download Endpoint
-// app.get('/api/download', async (req, res) => {
-//   const videoURL = req.query.url;
-  
-//   if (!ytdl.validateURL(videoURL)) {
-//     return res.status(400).send('Invalid YouTube URL');
-//   }
-
-//   try {
-//     const info = await ytdl.getInfo(videoURL);
-//     const title = info.videoDetails.title.replace(/[^\w\s]/gi, '');
-    
-//     res.header('Content-Disposition', `attachment; filename="${title}.mp4"`);
-
-//     ytdl(videoURL, {
-//       format: 'mp4'
-//     }).pipe(res);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).send('Download failed');
-//   }
-// });
-
-// // 🔍 Search Endpoint
-// // app.get('/api/search', async (req, res) => {
-// //   const query = req.query.q;
-// //   if (!query) {
-// //     return res.status(400).json({ error: 'Query parameter is required' });
-// //   }
-
-// //   try {
-// //     const result = await ytSearch(query);
-// //     const videos = result.videos.slice(0, 10); // return first 10 videos
-// //     res.json(videos);
-// //   } catch (err) {
-// //     console.error('Search error:', err);
-// //     res.status(500).json({ error: 'Search failed' });
-// //   }
-// // });
-
-
-
-
+// // Search videos from keywords
 // app.get('/api/search', async (req, res) => {
-//   const query = req.query.q;
-//   if (!query) {
-//     return res.status(400).json({ error: 'Query parameter is required' });
-//   }
-
 //   try {
+//     const query = req.query.q;
 //     const result = await ytSearch(query);
-//     const videos = result.videos.slice(0, 10).map(video => ({
-//       id: video.videoId,
+//     const videos = result.videos.slice(0, 5).map(video => ({
 //       title: video.title,
+//       videoId: video.videoId,
 //       thumbnail: video.thumbnail,
-//       url: video.url
 //     }));
-
-//     res.json({ results: videos }); // ✅ fixed structure
+//     res.json(videos);
 //   } catch (err) {
-//     console.error('Search error:', err);
 //     res.status(500).json({ error: 'Search failed' });
 //   }
 // });
 
+// // Get muxed video download links
+// app.get('/api/download-info', async (req, res) => {
+//   const videoUrl = req.query.url;
+//   if (!videoUrl) {
+//     return res.status(400).json({ error: 'URL is required' });
+//   }
 
+//   try {
+//     const info = await ytDlpWrap.getVideoInfo(videoUrl);
+//     const muxed = info.formats.filter(
+//       f => f.vcodec !== 'none' && f.acodec !== 'none' && f.filesize
+//     );
 
+//     const simplified = muxed.map(f => ({
+//       quality: f.format_note || `${f.height}p`,
+//       container: f.ext,
+//       url: f.url,
+//     }));
 
-// app.listen(3000, () => {
-//   console.log('✅ Server running on http://localhost:3000');
+//     res.json({
+//       title: info.title,
+//       thumbnail: info.thumbnail,
+//       formats: simplified,
+//     });
+//   } catch (err) {
+//     console.error('yt-dlp error:', err.message);
+//     res.status(500).json({ error: 'Failed to fetch video info' });
+//   }
+// });
+
+// app.listen(PORT, () => {
+//   console.log(`✅ Server running on http://localhost:${PORT}`);
 // });
 
 
@@ -187,6 +181,111 @@ app.listen(PORT, () => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const express = require('express');
+// const cors = require('cors');
+// const ytSearch = require('yt-search');
+// const { exec } = require('child_process');
+
+// const app = express();
+// const PORT = 10000;
+
+// app.use(cors());
+
+// app.get('/', (req, res) => {
+//   res.send('✅ YouTube Downloader API is working!');
+// });
+
+// // ✅ YouTube keyword search
+// app.get('/api/search', async (req, res) => {
+//   const query = req.query.q;
+//   if (!query) return res.status(400).json({ error: 'Missing query' });
+
+//   try {
+//     const result = await ytSearch(query);
+//     const videos = result.videos.slice(0, 10);
+//     res.json(videos);
+//   } catch (err) {
+//     res.status(500).json({ error: 'Search failed', details: err.message });
+//   }
+// });
+
+// // ✅ Get muxed formats only (no merging needed)
+// app.get('/api/download-info', (req, res) => {
+//   const url = req.query.url;
+//   if (!url) return res.status(400).json({ error: 'Missing URL' });
+
+//   const command = `yt-dlp -J "${url}"`;
+
+//   exec(command, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+//     if (err) {
+//       console.error('yt-dlp error:', stderr);
+//       return res.status(500).json({ error: 'Failed to fetch video info' });
+//     }
+
+//     try {
+//       const info = JSON.parse(stdout);
+
+//       // ✅ Only muxed formats (audio + video)
+//       const formats = info.formats
+//         .filter(f => f.url && f.vcodec !== 'none' && f.acodec !== 'none')
+//         .map(f => ({
+//           url: f.url,
+//           quality: f.format_note || f.quality_label,
+//           container: f.ext,
+//         }));
+
+//       res.json({
+//         title: info.title,
+//         thumbnail: info.thumbnail,
+//         formats,
+//       });
+//     } catch (parseErr) {
+//       console.error('Parse error:', parseErr);
+//       res.status(500).json({ error: 'Error parsing yt-dlp output' });
+//     }
+//   });
+// });
+
+// // ✅ Optional: Direct download stream
+// app.get('/api/download', (req, res) => {
+//   const url = req.query.url;
+//   if (!url) return res.status(400).json({ error: 'Missing URL' });
+
+//   res.setHeader('Content-Disposition', 'attachment; filename="video.mp4"');
+//   res.setHeader('Content-Type', 'video/mp4');
+
+//   const command = `yt-dlp -f best -o - "${url}" | ffmpeg -i pipe:0 -c copy -f mp4 pipe:1`;
+//   const process = exec(command, { maxBuffer: 1024 * 1024 * 500 });
+
+//   process.stdout.pipe(res);
+//   process.stderr.on('data', data => {
+//     console.error('yt-dlp error:', data.toString());
+//   });
+// });
+
+// app.listen(PORT, () => {
+//   console.log(`✅ Server running on http://localhost:${PORT}`);
+// });
 
 
 

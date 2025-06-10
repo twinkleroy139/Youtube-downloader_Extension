@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>YT Downloader</title>
+  <title>YouTube Downloader</title>
   <style>
-    body { font-family: Arial; padding: 10px; width: 300px; }
-    .video-item { margin-bottom: 10px; }
-    .video-item img { width: 100%; border-radius: 6px; }
-    .video-item button { width: 100%; margin-top: 5px; }
+    body { font-family: sans-serif; padding: 10px; width: 350px; }
+    input { width: 100%; padding: 5px; margin-bottom: 10px; }
+    button { margin: 4px 0; padding: 6px 10px; width: 100%; }
+    img { width: 100%; margin: 6px 0; }
+    .video-result { border: 1px solid #ccc; padding: 6px; margin-bottom: 10px; }
+    .formats button { font-size: 12px; }
   </style>
 </head>
 <body>
-  <input type="text" id="searchInput" placeholder="Paste YouTube URL or search term" style="width: 100%;">
-  <button id="searchBtn">Search / Download</button>
+  <h2>YouTube Downloader</h2>
+  <input type="text" id="search" placeholder="Paste URL or search keywords..." />
+  <button id="searchBtn">Search / Load</button>
   <div id="results"></div>
+
   <script src="popup.js"></script>
 </body>
 </html>

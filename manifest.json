@@ -1,10 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Video Downloader",
+  "description": "Download YouTube videos via keyword or URL in various qualities (no merging required).",
   "version": "1.0",
-  "description": "Safely download YouTube videos using your own API server.",
-  "permissions": ["activeTab", "scripting", "downloads", "storage"],
-  "host_permissions": ["https://yt-server-qo6z.onrender.com/*"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -13,13 +11,19 @@
       "128": "icons/Adobe Express - file.png"
     }
   },
+  "permissions": [
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:10000/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ]
+  "icons": {
+    "16": "icons/ytLogo1.png",
+    "48": "icons/Adobe Express - file.png",
+    "128": "icons/Adobe Express - file.png"
+  }
 }
