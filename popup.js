@@ -1,4 +1,4 @@
-const API_BASE = "https://your-render-subdomain.onrender.com"; // <- Replace with your real URL
+const API_BASE = "https://yt-server-qo6z.onrender.com";
 
 document.getElementById('searchBtn').addEventListener('click', async () => {
   const input = document.getElementById('search').value.trim();
@@ -89,6 +89,123 @@ document.getElementById('results').addEventListener('click', async (e) => {
     }
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const API_BASE = "https://your-render-subdomain.onrender.com"; // <- Replace with your real URL
+
+// document.getElementById('searchBtn').addEventListener('click', async () => {
+//   const input = document.getElementById('search').value.trim();
+//   const resultsDiv = document.getElementById('results');
+//   resultsDiv.innerHTML = '';
+
+//   if (!input) return;
+
+//   let videos = [];
+//   const isUrl = input.includes('youtube.com') || input.includes('youtu.be');
+
+//   try {
+//     if (isUrl) {
+//       const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(input)}`);
+//       const data = await res.json();
+//       videos = [{ title: data.title, thumbnail: data.thumbnail, url: input }];
+//     } else {
+//       const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(input)}`);
+//       const data = await res.json();
+//       videos = data;
+//     }
+
+//     videos.forEach(video => {
+//       const div = document.createElement('div');
+//       div.className = 'video-result';
+//       div.innerHTML = `
+//         <strong>${video.title}</strong><br/>
+//         <img src="${video.thumbnail || 'https://i.ytimg.com/vi/' + video.videoId + '/hqdefault.jpg'}" />
+//         <button class="download-btn" data-url="${video.url || 'https://www.youtube.com/watch?v=' + video.videoId}">
+//           Show Download Options
+//         </button>
+//         <div class="formats"></div>
+//       `;
+//       resultsDiv.appendChild(div);
+//     });
+//   } catch (err) {
+//     resultsDiv.innerHTML = `<p>Error: ${err.message}</p>`;
+//   }
+// });
+
+// document.getElementById('results').addEventListener('click', async (e) => {
+//   if (e.target.classList.contains('download-btn')) {
+//     const url = e.target.getAttribute('data-url');
+//     const formatsDiv = e.target.nextElementSibling;
+//     formatsDiv.innerHTML = 'Loading...';
+
+//     try {
+//       const res = await fetch(`${API_BASE}/api/download-info?url=${encodeURIComponent(url)}`);
+//       const data = await res.json();
+//       formatsDiv.innerHTML = '';
+
+//       if (data.formats.length === 0) {
+//         formatsDiv.innerHTML = '<small>No available muxed formats</small>';
+//         return;
+//       }
+
+//       data.formats.forEach(format => {
+//         const btn = document.createElement('button');
+//         btn.className = 'format-option';
+//         btn.innerText = `${format.ext} - ${format.formatNote || format.quality} - ${format.filesize ? (format.filesize / 1e6).toFixed(1) + 'MB' : 'unknown size'}`;
+//         btn.onclick = async () => {
+//           try {
+//             const res = await fetch(`${API_BASE}/api/download`, {
+//               method: 'POST',
+//               headers: {
+//                 'Content-Type': 'application/json'
+//               },
+//               body: JSON.stringify({
+//                 url,
+//                 formatId: format.format_id
+//               })
+//             });
+
+//             const result = await res.json();
+//             if (result.success) {
+//               alert('✅ Download started!');
+//             } else {
+//               alert('❌ Failed: ' + result.error);
+//             }
+//           } catch (err) {
+//             alert('❌ Error: ' + err.message);
+//           }
+//         };
+//         formatsDiv.appendChild(btn);
+//       });
+//     } catch (err) {
+//       formatsDiv.innerHTML = `<p>Error: ${err.message}</p>`;
+//     }
+//   }
+// });
 
 
 
