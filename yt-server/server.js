@@ -1,4 +1,4 @@
-// using render and git global config
+// ✅ Cleaned & Updated server.js:
 const express = require('express');
 const cors = require('cors');
 const { exec } = require('child_process');
@@ -14,6 +14,18 @@ app.use(cors());
 app.use(express.json());
 
 const ytDlpWrap = new YtDlpWrap("/usr/bin/yt-dlp");
+
+// ✅ Utility: clean YouTube URL
+function cleanYouTubeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const v = parsed.searchParams.get("v");
+    if (v) return `https://www.youtube.com/watch?v=${v}`;
+    return parsed.origin + parsed.pathname;
+  } catch {
+    return url;
+  }
+}
 
 // === Search endpoint ===
 app.get('/api/search', async (req, res) => {
@@ -39,8 +51,10 @@ app.get('/api/download-info', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'Missing url' });
 
+  const safeUrl = cleanYouTubeUrl(url);
+
   try {
-    const infoJson = await ytDlpWrap.getVideoInfo(url);
+    const infoJson = await ytDlpWrap.getVideoInfo(safeUrl);
     const title = infoJson.title;
     const thumbnail = infoJson.thumbnail;
     const formats = infoJson.formats.filter(f => f.acodec !== 'none' && f.vcodec !== 'none');
@@ -56,13 +70,14 @@ app.post('/api/download', async (req, res) => {
   const { url, formatId } = req.body;
   if (!url || !formatId) return res.status(400).json({ error: 'Missing url or formatId' });
 
+  const safeUrl = cleanYouTubeUrl(url);
   const outputPath = path.resolve(__dirname, 'downloads');
   if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath);
 
   const outputFilename = `${Date.now()}-%(title)s.%(ext)s`;
 
   const process = ytDlpWrap.exec([
-    url,
+    safeUrl,
     '-f', formatId,
     '-o', path.join(outputPath, outputFilename)
   ]);
@@ -87,6 +102,116 @@ app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // using render and git global config
+// const express = require('express');
+// const cors = require('cors');
+// const { exec } = require('child_process');
+// const YtDlpWrap = require('yt-dlp-wrap').default;
+// const ytSearch = require('yt-search');
+// const fs = require('fs');
+// const path = require('path');
+
+// const app = express();
+// const PORT = process.env.PORT || 10000;
+
+// app.use(cors());
+// app.use(express.json());
+
+// const ytDlpWrap = new YtDlpWrap("/usr/bin/yt-dlp");
+
+// // === Search endpoint ===
+// app.get('/api/search', async (req, res) => {
+//   const { q } = req.query;
+//   if (!q) return res.status(400).json({ error: 'Missing search query' });
+
+//   try {
+//     const result = await ytSearch(q);
+//     const videos = result.videos.slice(0, 5).map(v => ({
+//       title: v.title,
+//       videoId: v.videoId,
+//       url: v.url,
+//       thumbnail: v.thumbnail
+//     }));
+//     res.json(videos);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+// // === Download Info endpoint ===
+// app.get('/api/download-info', async (req, res) => {
+//   const { url } = req.query;
+//   if (!url) return res.status(400).json({ error: 'Missing url' });
+
+//   try {
+//     const infoJson = await ytDlpWrap.getVideoInfo(url);
+//     const title = infoJson.title;
+//     const thumbnail = infoJson.thumbnail;
+//     const formats = infoJson.formats.filter(f => f.acodec !== 'none' && f.vcodec !== 'none');
+
+//     res.json({ title, thumbnail, formats });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+// // === Download endpoint ===
+// app.post('/api/download', async (req, res) => {
+//   const { url, formatId } = req.body;
+//   if (!url || !formatId) return res.status(400).json({ error: 'Missing url or formatId' });
+
+//   const outputPath = path.resolve(__dirname, 'downloads');
+//   if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath);
+
+//   const outputFilename = `${Date.now()}-%(title)s.%(ext)s`;
+
+//   const process = ytDlpWrap.exec([
+//     url,
+//     '-f', formatId,
+//     '-o', path.join(outputPath, outputFilename)
+//   ]);
+
+//   process.once('close', (code) => {
+//     if (code === 0) {
+//       res.json({ success: true, message: 'Download started' });
+//     } else {
+//       res.status(500).json({ error: 'Download failed', code });
+//     }
+//   });
+
+//   process.stderr.on('data', (data) => {
+//     console.error(`stderr: ${data}`);
+//   });
+// });
+
+// // Serve downloads folder (optional)
+// app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
+
+// // Start server
+// app.listen(PORT, () => {
+//   console.log(`✅ Server running on port ${PORT}`);
+// });
 
 
 
