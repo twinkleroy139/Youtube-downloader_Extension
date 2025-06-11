@@ -52,6 +52,7 @@ app.get('/api/download-info', async (req, res) => {
   if (!url) return res.status(400).json({ error: 'Missing url' });
 
   const safeUrl = cleanYouTubeUrl(url);
+  console.log("👉 Cleaned URL:", safeUrl);  // ADD THIS
 
   try {
     const infoJson = await ytDlpWrap.getVideoInfo(safeUrl);
@@ -61,6 +62,7 @@ app.get('/api/download-info', async (req, res) => {
 
     res.json({ title, thumbnail, formats });
   } catch (err) {
+    console.error("❌ yt-dlp error:", err); // ADD THIS
     res.status(500).json({ error: err.message });
   }
 });
